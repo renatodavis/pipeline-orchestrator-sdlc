@@ -1,0 +1,24 @@
+{
+  "name": "pipeline-orchestrator-sdlc",
+  "version": "0.1.0",
+  "description": "Pipeline SDLC spec-driven com paradas HITL (Human-in-the-Loop), integração GitLab/GitHub e eventos JSON estruturados. Inclui a skill-fábrica pipeline-orchestrator-factory e cinco subagents pré-configurados: pipeline-orchestrator, triage-pm, spec-builder, coder-dev e code-reviewer.",
+  "author": {
+    "name": "Renato Davis",
+    "email": "renatodavis@gmail.com",
+    "url": "https://github.com/renatodavis"
+  },
+  "homepage": "https://github.com/renatodavis/pipeline-orchestrator-sdlc",
+  "repository": "https://github.com/renatodavis/pipeline-orchestrator-sdlc",
+  "license": "MIT",
+  "keywords": [
+    "sdlc",
+    "orchestrator",
+    "spec-driven",
+    "hitl",
+    "gitlab",
+    "github",
+    "code-review",
+    "pipeline",
+    "agents"
+  ]
+}

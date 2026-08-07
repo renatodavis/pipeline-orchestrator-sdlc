@@ -1,0 +1,90 @@
+name: plugin-check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate plugin.json
+        run: |
+          python3 - <<'PY'
+          import json, sys, pathlib
+          p = pathlib.Path(".claude-plugin/plugin.json")
+          data = json.loads(p.read_text(encoding="utf-8"))
+          required = ["name", "version", "description"]
+          missing = [k for k in required if not data.get(k)]
+          if missing:
+              sys.exit(f"plugin.json missing required keys: {missing}")
+          print(f"plugin.json OK — {data['name']} v{data['version']}")
+          PY
+
+      - name: Validate agent frontmatter
+        run: |
+          python3 - <<'PY'
+          import re, sys, pathlib
+          errors = []
+          for f in pathlib.Path("agents").glob("*.md"):
+              text = f.read_text(encoding="utf-8")
+              m = re.match(r"^---\n(.*?)\n---", text, re.DOTALL)
+              if not m:
+                  errors.append(f"{f}: missing YAML frontmatter")
+                  continue
+              fm = m.group(1)
+              name_match = re.search(r"^name:\s*(\S+)", fm, re.MULTILINE)
+              desc_match = re.search(r"^description:\s*.+", fm, re.MULTILINE)
+              if not name_match:
+                  errors.append(f"{f}: frontmatter missing 'name'")
+              elif name_match.group(1) != f.stem:
+                  errors.append(f"{f}: name '{name_match.group(1)}' != filename '{f.stem}'")
+              if not desc_match:
+                  errors.append(f"{f}: frontmatter missing 'description'")
+              if "{{" in text or "}}" in text:
+                  errors.append(f"{f}: unresolved template placeholder")
+          if errors:
+              print("\n".join(errors))
+              sys.exit(1)
+          print("agents/ OK")
+          PY
+
+      - name: Validate skill frontmatter
+        run: |
+          python3 - <<'PY'
+          import re, sys, pathlib
+          errors = []
+          for f in pathlib.Path("skills").glob("*/SKILL.md"):
+              text = f.read_text(encoding="utf-8")
+              m = re.match(r"^---\n(.*?)\n---", text, re.DOTALL)
+              if not m:
+                  errors.append(f"{f}: missing YAML frontmatter")
+                  continue
+              fm = m.group(1)
+              if not re.search(r"^name:\s*\S+", fm, re.MULTILINE):
+                  errors.append(f"{f}: frontmatter missing 'name'")
+              if not re.search(r"^description:\s*.+", fm, re.MULTILINE):
+                  errors.append(f"{f}: frontmatter missing 'description'")
+          if errors:
+              print("\n".join(errors))
+              sys.exit(1)
+          print("skills/ OK")
+          PY
+
+      - name: Validate event log example
+        run: |
+          python3 - <<'PY'
+          import json, sys, pathlib
+          f = pathlib.Path("skills/pipeline-orchestrator-factory/assets/event-log-example.jsonl")
+          for i, line in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
+              if not line.strip():
+                  continue
+              try:
+                  json.loads(line)
+              except json.JSONDecodeError as e:
+                  sys.exit(f"line {i}: invalid JSON — {e}")
+          print("event log example OK")
+          PY
