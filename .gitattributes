@@ -1,0 +1,16 @@
+# Normaliza line endings — LF no repo, checkout nativo por SO
+* text=auto eol=lf
+
+# Binários explícitos (nenhum hoje, mas deixa a política clara)
+*.png binary
+*.jpg binary
+*.gif binary
+*.pdf binary
+
+# Arquivos que precisam LF sempre (scripts shell, YAML, JSON)
+*.sh text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.jsonl text eol=lf
+*.md text eol=lf

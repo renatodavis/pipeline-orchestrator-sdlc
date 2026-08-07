@@ -13,13 +13,23 @@ Work Item ─▶ TriagePM ─▶ SpecBuilder ─┼─▶ CoderDev ─▶ CodeRe
 
 ## Instalação
 
-Em um terminal do Claude Code:
+Em um terminal do Claude Code, dois passos:
 
 ```
-/plugin install renatodavis/pipeline-orchestrator-sdlc
+/plugin marketplace add renatodavis/pipeline-orchestrator-sdlc
+/plugin install pipeline-orchestrator-sdlc@pipeline-orchestrator-sdlc
 ```
 
-Isso registra a skill `pipeline-orchestrator-factory`, os cinco subagents e os três slash commands. Nenhuma dependência de Node/npm — o plugin é 100% arquivos versionados neste repo.
+O primeiro comando registra este repositório como um marketplace (fonte de plugins). O segundo instala o plugin dessa fonte. Nome final: `<plugin-name>@<marketplace-name>` — nesse caso os dois coincidem porque o repo hospeda um único plugin.
+
+Depois, para manter atualizado ou remover:
+
+```
+/plugin marketplace update pipeline-orchestrator-sdlc     # busca versões novas
+/plugin uninstall pipeline-orchestrator-sdlc              # remove
+```
+
+Nenhuma dependência de Node/npm — o plugin é 100% arquivos versionados neste repo.
 
 **Pré-requisitos operacionais** (do seu lado, não do plugin):
 
@@ -63,7 +73,9 @@ Um dashboard futuro consome esse stream (`schema_version: 1` protege contra brea
 
 ```
 pipeline-orchestrator-sdlc/
-├── .claude-plugin/plugin.json        Manifesto
+├── .claude-plugin/
+│   ├── plugin.json                   Manifesto do plugin
+│   └── marketplace.json              Manifesto do marketplace (single-plugin)
 ├── agents/                           5 subagents pré-configurados (GitHub + gh CLI)
 │   ├── pipeline-orchestrator.md
 │   ├── triage-pm.md
