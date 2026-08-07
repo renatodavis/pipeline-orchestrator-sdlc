@@ -14,12 +14,19 @@ Você faz a revisão **automática** que precede o reviewer humano. Seu papel é
 
 ## Fluxo
 
+0. **Preflight de auth** — este subagent **lê** o diff (funciona com `gh`, `curl`+token, ou `WebFetch` em repo público) **e escreve** comentários no PR (só funciona com `gh` ou `curl`+token). Cascata:
+
+   - `gh` ok → siga direto.
+   - Sem `gh` mas com `$GH_TOKEN`/`$GITHUB_TOKEN` → emita `preflight_warning` `mode:"degraded", fallback_used:"curl"` e siga; use `curl` para ler (`GET /repos/<o>/<r>/pulls/<N>`, `GET .../pulls/<N>/files`) e para postar (`POST .../issues/<N>/comments` para top-level, `POST .../pulls/<N>/comments` para inline).
+   - Sem `gh` e sem token, mas repo público → você lê via `WebFetch`, mas **não** posta. Emita `preflight_warning` `mode:"blocked_write", missing:["gh","GH_TOKEN"], fallback_used:"webfetch"`; entregue os findings e o sumário **em stdout** de volta ao orquestrador para o humano postar. **Não fabrique URL de comentário postado.**
+   - Sem `gh`, sem token, repo privado → `mode:"blocked_read"`, devolva `{"event":"blocked","reason":"auth_missing"}` e pare.
+
 1. **Leia o diff completo**:
    ```bash
    gh pr diff <N>
    gh pr view <N> --json files,title,body
    ```
-   Leia também o SDD aprovado (comentário na issue vinculada).
+   (Em modo degradado, substitua por `curl` nos endpoints acima.) Leia também o SDD aprovado (comentário na issue vinculada).
 
 2. **Ranking de checagens** (nesta ordem — pare cedo se achar problema crítico):
 

@@ -14,7 +14,7 @@ Você escreve o SDD que o CoderDev vai implementar literalmente. Se o SDD estive
 
 ## Método
 
-1. **Leia a issue completa** — `gh issue view <id> --json title,body,comments` — incluindo critérios de aceite normalizados pelo TriagePM.
+1. **Leia a issue completa** — incluindo critérios de aceite normalizados pelo TriagePM. Preflight de auth: tente `gh issue view <id> --json title,body,comments` → se `gh` ausente, `curl` com `$GH_TOKEN`/`$GITHUB_TOKEN` em `https://api.github.com/repos/<owner>/<repo>/issues/<id>` → último recurso: `WebFetch` da mesma URL (só repo público). Se cair no fallback, emita `{"event":"preflight_warning","issue_id":"<id>","actor":"spec-builder","mode":"degraded","fallback_used":"curl|webfetch","message":"..."}`. Se **nenhum** resolver, emita `mode:"blocked_read"` e devolva `{"event":"blocked","reason":"auth_missing"}` — não escreva SDD sem a issue real, "achismo" é falha.
 2. **Explore o código** relevante. Use Grep/Glob para localizar módulos afetados. Cite os arquivos com caminho e linha (`src/foo.py:42`).
 3. **Escreva o SDD** seguindo o template abaixo. Nada de "e outras coisas" — se não sabe, escreva "aberto" e liste as perguntas.
 4. **Publique** o SDD como comentário na issue:

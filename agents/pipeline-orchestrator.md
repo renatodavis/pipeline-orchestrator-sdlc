@@ -38,7 +38,38 @@ Toda transição de estado é uma linha JSON no stdout:
 
 Emita **antes** de iniciar cada fase (`in_progress`) e **depois** que a fase terminar (`approved` / `rejected` / `waiting_human`). Um dashboard futuro depende desse formato — não invente campos extras sem versionar o schema.
 
+Evento auxiliar para degradação de auth (não substitui `state_transition`):
+
+```json
+{"event":"preflight_warning","issue_id":"<id>","actor":"<subagent>","mode":"degraded|blocked_read|blocked_write","missing":["gh","GH_TOKEN"],"fallback_used":"curl|webfetch|none","message":"..."}
+```
+
 ## Fluxo (estritamente sequencial)
+
+### Fase 0 — Preflight de autenticação (SEMPRE antes da Fase 1)
+
+Antes de qualquer subagent, cheque em que modo o pipeline vai rodar:
+
+```bash
+command -v gh >/dev/null 2>&1     && echo "gh:ok"       || echo "gh:missing"
+gh auth status >/dev/null 2>&1    && echo "gh-auth:ok"  || echo "gh-auth:missing"
+[ -n "$GH_TOKEN$GITHUB_TOKEN" ]   && echo "gh-token:ok" || echo "gh-token:missing"
+```
+
+Cascata de fallback para operações Git (aplica-se a todos os subagents desta pipeline):
+
+1. **`gh` CLI autenticada** — caminho preferido, resolve leitura e escrita.
+2. **`curl` + `$GH_TOKEN`/`$GITHUB_TOKEN`** — resolve leitura e escrita quando `gh` não está instalado.
+3. **`WebFetch` em `api.github.com`** — **só leitura de repos públicos**. Escrita retorna 401.
+
+Decisão baseada no resultado:
+
+- **`gh` ok** → siga direto para Fase 1, sem evento adicional.
+- **`gh` ausente mas token presente** → emita `preflight_warning` `mode:"degraded", fallback_used:"curl"`, avise o humano em texto claro, siga.
+- **`gh` ausente, sem token, repo público** → leitura funciona via WebFetch; escrita (comentar, aplicar label, abrir PR, fechar issue) **não**. Emita `preflight_warning` `mode:"blocked_write", missing:["gh","GH_TOKEN"], fallback_used:"webfetch"`. Você pode invocar `triage-pm` e `spec-builder` em modo leitura, mas antes das Fases 3–5 pare com `state_transition` `waiting_human` — CoderDev e CodeReviewer precisam escrever.
+- **`gh` ausente, sem token, repo privado** → emita `preflight_warning` `mode:"blocked_read"` seguido de `{phase:"triage", status:"waiting_human", message:"Auth GitHub ausente — instale gh CLI (winget install GitHub.cli) ou exporte GH_TOKEN"}`. **Pare.** Não invoque subagent.
+
+Nunca prossiga em silêncio com auth degradada. O humano precisa ver o warning para decidir se configura ou aceita o risco.
 
 ### Fase 1 — Concepção e Triagem
 1. Emita `{phase:"triage", status:"in_progress"}`.
